@@ -10,5 +10,7 @@ The last function schedules several twitter uploads based on the dates obtained 
 those dates, if you want to see it working. The UKPyth twitter account already has both bulk and scheduled posts uploaded.
 Exit from the scheduler function by hitting CTRL-Z. 
 
+Also beware of double posting - Twitter won't allow this. 
+
 Overall this project could do with a lot more refactoring. Due to time contraints I ended up with two many nested for loops,
-the wait time can definietely be reduced. 
+the wait time can definietely be reduced, using a variety of tools such as map(), filter() and enumerate() from itertools.
