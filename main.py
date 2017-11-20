@@ -7,52 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from PIL import Image
-
-#Function to share twitter credentials:
-def twitter_cred():
-	auth = tweepy.OAuthHandler('consumer key', 'consumer secret')
-	auth.set_access_token('access token','access token secret')
-	api = tweepy.API(auth)
-	return auth, api
-
-"""Should be refactored using filter and the itertools library. Tweets out text from spreadsheet, for only 
-those entries categorized for twitter."""
-def tweet_bulk(df,mypath):
-	auth, api = twitter_cred()
-
-	for index,row in df.iterrows():
-		if df.loc[index,'socialmedia_channel'] == 'Twitter':
-			img_url = row['post_img']
-			if isinstance(img_url, str):
-				for root, dirs, files in os.walk(mypath + '\static'):
-					for name in files:
-						if name in img_url:
-							filename = name
-							img = mypath + '\static\\' + filename							
-							api.update_with_media(img, status=row['post_text'])
-			else:
-				api.update_status(row['post_text'])
-
-"""This one is for use with the scheduler function. Tweet out specific post instead of all of them.
-Should be merged with the previous function. """
-def tweet(_index, df):
-	auth, api = twitter_cred()
-	dirpath = os.getcwd()
-	mypath = dirpath
-
-	#Could also be refactored to make use of filter.
-	for index,row in df.iterrows():
-		if df.loc[index,'socialmedia_channel'] == 'Twitter' and index == _index:
-			img_url = row['post_img']
-			if isinstance(img_url, str):
-				for root, dirs, files in os.walk(mypath):
-					for name in files:
-						if name in img_url:
-							filename = name
-							img = mypath + '\\' + filename
-							api.update_with_media(img, status=row['post_text'])
-			else:
-				api.update_status(row['post_text'])
+from tweet import Tweet
 
 #Adds the values to the socialmedia_channel column in the spreadsheet.
 def update_spreadsheet(df,ws,book):
@@ -63,10 +18,11 @@ def update_spreadsheet(df,ws,book):
 	
 	for cell in ws['E'][1:-1]:
 		cell.value = socialmedia_list[ws['E'].index(cell) - 1]
-
+		
 	book.save('Python_exercise_Handle.xlsx')
 
 def logo():
+	#Retrieve Harper Collins logo image from URL.
 	urllib.request.urlretrieve("http://cityread.london/wp-content/uploads/2016/02/HarperCollins-logo.png"
 		, 'harper.jpg')
 
@@ -79,12 +35,11 @@ def logo():
 #Set up a schedule using APScheduler. Runs in background until you quite using CTRL-Z.
 def schedule_tweets(df):
 	sched = BackgroundScheduler()
-
+	print("Started Scheduling process")
 	#add scheduled jobs
 	for index,row in df.iterrows():
 		_time = parse(str(row['post_datetime']))
-		
-		sched.add_job(tweet,'date', run_date=_time, args=[index, df])
+		sched.add_job(Tweet.single_tweet,'date', run_date=_time, args=[index, df])
 								
 	sched.start()
 	
@@ -136,7 +91,7 @@ def get_images_and_merge(df,mypath,harper):
 			box = (0, 438)
 			i.paste(harper.resize((60,60)),box, mask=harper.resize((60,60)))
 		i.save(file)
-		#Get rid of uneeded imaged files:
+		#Get rid of uneeded image files:
 		for root, dirs, files in os.walk(mypath):
 			for name in files:
 				if name == 'harper.jpg' or name == 'harper.png':
@@ -153,10 +108,7 @@ def main():
 	
 	#Set socialmedia_channel values
 	for index, row in df.iterrows():
-		if len(row['post_text']) > 140:
-			df.loc[index,'socialmedia_channel'] = 'Facebook'
-		else:
-			df.loc[index,'socialmedia_channel'] = 'Twitter'
+		df.loc[index,'socialmedia_channel'] = 'Facebook' if len(row['post_text']) > 140 else 'Twitter'
 	
 	#Get socialmedia values to append onto spreadsheet
 	update_spreadsheet(df,ws, book)
@@ -167,7 +119,7 @@ def main():
 	get_images_and_merge(df,mypath,harper)
 
 	#Now that images have been resized and saved, Tweet out posts.
-	tweet_bulk(df,mypath)
+	Tweet.tweet_bulk(df)
 	
 	#We can also schedule these tweets. Exit from the script using CTRL-Z.
 	schedule_tweets(df)
