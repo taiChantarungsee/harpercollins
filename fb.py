@@ -9,8 +9,8 @@ def facebook_info():
 
 	"""Build up URL first. For saftey I've taken out the page id. Just hit the Harper Collins FB URL:
 	"graph.facebook.com/v2.11/HarperCollinsPublishersUK" To obtain it, then insert it below at line 15."""
-	graph = GraphAPI('EAACEdEose0cBADZB9gVNmXUR2Abd8kN2O1Wpu85IAVTIzb5SZCanNVqoynHDORxegA5RyLn7ayIQxZBJdfL2ux9EzsTT4Kr0Y4gwXsokaCZA52Gkxu1lg1GcZBkp2wwZCQNOD8nKzZB2uznjJSKq5LE34DBkN6hCLMmJnYnU7WKTKZBeEJAOHSc6HcKdVyHMFGSwS74AAe3RowZDZD')
-	posts = graph.get('501102899913552/posts?fields=message,created_time,likes.summary(true),comments.summary(true),shares,type&since=2017-05-01&until=2017-11-19', pagination=True)
+	graph = GraphAPI('auth_token')
+	posts = graph.get('page-id/posts?fields=message,created_time,likes.summary(true),comments.summary(true),shares,type&since=2017-05-01&until=2017-11-19', pagination=True)
 
 	#Append posts to a list.
 	while True:
